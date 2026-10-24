@@ -1,5 +1,0 @@
-Go to script.google.com → New project. Paste Code.gs into the default Code.gs file.
-Click + → HTML, name it exactly Index, and paste in Index.html.
-Select setup in the function dropdown and click Run. Approve the permissions (Sheets and email). This creates the ICCSE-2026 Registrations sheet, and its link appears in the Execution log.
-Click Deploy → New deployment → Web app. Set Execute as: Me and Who has access: Anyone, then click Deploy.
-Share the Web app URL with participants.
