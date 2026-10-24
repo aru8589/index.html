@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>ICCSE-2026 Registration</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 16px; color: #202124; }
+  .card { max-width: 640px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h2 { margin: 24px 0 0; font-size: 17px; color: #1a73e8; border-top: 1px solid #e0e0e0; padding-top: 14px; }
+  .sub { margin: 0 0 8px; color: #5f6368; font-size: 14px; }
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
+  small { display: block; color: #5f6368; font-size: 12px; margin-top: 2px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 9px; margin-top: 5px; border: 1px solid #c4c7c5; border-radius: 6px; font-size: 15px; }
+  button { margin-top: 24px; padding: 11px 22px; background: #1a73e8; color: #fff; border: 0; border-radius: 6px; font-size: 15px; cursor: pointer; }
+  button:disabled { background: #9bb8e8; }
+  [hidden] { display: none !important; }
+  #dlg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 9; }
+  #dlg .box { background: #fff; border-radius: 12px; padding: 18px; text-align: center; }
+  #rd { font-size: 38px; margin-bottom: 6px; }
+  #rd span { cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  #rd .on { background: #d2e3fc; color: #1a73e8; }
+  .ap button, .act button { margin: 6px 4px 0; padding: 7px 16px; font-size: 14px; background: #e8eaed; color: #202124; }
+  .ap button.on, .act #ok { background: #1a73e8; color: #fff; }
+  #sv { cursor: pointer; touch-action: manipulation; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>ICCSE-2026 Registration</h1>
+  <p class="sub">Fields marked * are required. A copy of your response is sent to your email.</p>
+  <form id="f"></form>
+  <div id="msg"></div>
+</div>
+<div id="dlg" hidden>
+  <div class="box">
+    <div id="rd"></div>
+    <div class="ap"><button type="button" id="am">AM</button><button type="button" id="pm">PM</button></div>
+    <svg id="sv" viewBox="-110 -110 220 220" width="250" height="250"></svg>
+    <div class="act"><button type="button" id="cn">Cancel</button><button type="button" id="ok">OK</button></div>
+  </div>
+</div>
+<script>
+var SLOTS = ['Morning', 'Pre-lunch', 'Post-lunch', 'Night', 'Exact time'];
+var C = [
+  {k:'title', l:'Title', t:'s', o:['Prof. Emer.','Prof.','Assoc. Prof.','Asst. Prof.','Sci./Res. Sci.','Dr.','Mr.','Mrs./Ms.']},
+  {k:'name', l:'Full Name', t:'text', r:1},
+  {k:'regStatus', l:'Registration Status', t:'s', o:['Registered','Non-Registered'], r:1},
+  {k:'participatedAs', l:'Participated as', t:'s', o:['Delegate','Oral','Poster','Others'], r:1},
+  {k:'nationality', l:'Nationality', t:'s', o:['Foreign','Indian'], r:1},
+  {h:'Travel Plan: Arrival', w:'D'},
+  {k:'arrDate', l:'Arrival Date', t:'date', r:1, w:'D'},
+  {k:'arrSlot', l:'Arrival Time Slot', t:'s', o:SLOTS, r:1, w:'D'},
+  {k:'arrTime', l:'Flight/Others Arrival Exact Time (hh:mm, IST)', t:'time', r:1, w:'AE'},
+  {h:'Travel Plan: Departure', w:'D'},
+  {k:'depDate', l:'Departure Date', t:'date', r:1, w:'D'},
+  {k:'depSlot', l:'Departure Time Slot', t:'s', o:SLOTS, r:1, w:'D'},
+  {k:'depTime', l:'Flight/Others Departure Exact Time (hh:mm, IST)', t:'time', r:1, w:'DE'},
+  {h:'Other Details'},
+  {k:'address', l:'Personal Address (Details)', t:'text'},
+  {k:'accommodation', l:'Accommodation (Hotel/Neighbour/Others Details)', t:'text', r:1},
+  {k:'emergency', l:'Emergency Contact Number', t:'tel', r:1},
+  {k:'email', l:'Email', t:'email', r:1, help:'Use the email you were invited with.'},
+  {k:'category', l:'Category', t:'s', o:['Faculty','Scientist','Post-Doc','Student/Scholar','Industry','Others'], r:1},
+  {k:'institution', l:'Department, Institution/Organization', t:'text', r:1},
+  {k:'meal', l:'Lunch/Dinner', t:'s', o:['Veg','Non-Veg','Both'], r:1},
+  {k:'outdoor', l:'Outdoor Activities', t:'s', o:['Interested','Not-Interested']},
+  {k:'mobile', l:'Mobile Number/Whatsapp', t:'tel', r:1, p:'(\\+?[0-9]{1,3}[ -]?)?[0-9]{10}', help:'10 digits, with or without country code.'}
+];
+
+var f = document.getElementById('f');
+C.forEach(function (c) {
+  var d = document.createElement('div');
+  if (c.w) d.dataset.w = c.w;
+  if (c.h) {
+    d.innerHTML = '<h2>' + c.h + '</h2>';
+  } else {
+    var h = '<label>' + c.l + (c.r ? ' *' : '') + '</label>';
+    if (c.help) h += '<small>' + c.help + '</small>';
+    if (c.t === 's') {
+      h += '<select name="' + c.k + '"' + (c.r ? ' required' : '') + '><option value="">Choose</option>' +
+        c.o.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select>';
+    } else {
+      var tm = c.t === 'time';
+      h += '<input name="' + c.k + '" type="' + (tm ? 'text' : c.t) + '"' + (c.r ? ' required' : '') +
+        (tm ? ' class="tp" placeholder="hh:mm - tap to open clock" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" inputmode="none" autocomplete="off"' : '') +
+        (c.p ? ' pattern="' + c.p + '"' : '') + '>';
+    }
+    d.innerHTML = h;
+  }
+  f.appendChild(d);
+});
+f.insertAdjacentHTML('beforeend', '<button id="b">Submit registration</button>');
+var b = document.getElementById('b');
+
+function v(n) { return f.elements[n].value; }
+function toggle() {
+  var D = v('participatedAs') === 'Delegate';
+  var show = { D: D, AE: D && v('arrSlot') === 'Exact time', DE: D && v('depSlot') === 'Exact time' };
+  f.querySelectorAll('[data-w]').forEach(function (d) {
+    var on = show[d.dataset.w];
+    d.hidden = !on;
+    d.querySelectorAll('input,select').forEach(function (i) { i.disabled = !on; });
+  });
+}
+f.addEventListener('change', toggle);
+toggle();
+
+f.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var d = {};
+  Array.prototype.forEach.call(f.elements, function (i) {
+    if (i.name && !i.disabled) d[i.name] = i.value;
+  });
+  b.disabled = true;
+  b.textContent = 'Submitting...';
+  google.script.run
+    .withSuccessHandler(function () {
+      f.hidden = true;
+      document.getElementById('msg').innerHTML =
+        '<h2>Thank you!</h2><p>Your registration has been recorded. A copy was sent to your email.</p>';
+    })
+    .withFailureHandler(function (er) {
+      b.disabled = false;
+      b.textContent = 'Submit registration';
+      alert(er.message);
+    })
+    .submitForm(d);
+});
+
+var dlg = document.getElementById('dlg'), sv = document.getElementById('sv'), rd = document.getElementById('rd');
+var cur = null, st = { h: 12, m: 0, pm: false, mode: 'h' };
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function draw() {
+  var s = '<circle r="105" fill="#f1f3f4" stroke="#c4c7c5"/>';
+  var ang = (st.mode === 'h' ? (st.h % 12) * 30 : st.m * 6) * Math.PI / 180;
+  s += '<line x1="0" y1="0" x2="' + (Math.sin(ang) * 72) + '" y2="' + (-Math.cos(ang) * 72) + '" stroke="#1a73e8" stroke-width="3"/>';
+  for (var i = 1; i <= 12; i++) {
+    var a = i * Math.PI / 6, x = Math.sin(a) * 82, y = -Math.cos(a) * 82;
+    var val = st.mode === 'h' ? i : (i % 12) * 5;
+    var sel = st.mode === 'h' ? st.h === i : st.m === val;
+    s += (sel ? '<circle cx="' + x + '" cy="' + y + '" r="16" fill="#1a73e8"/>' : '') +
+      '<text x="' + x + '" y="' + y + '" text-anchor="middle" dominant-baseline="central" font-size="15" fill="' +
+      (sel ? '#fff' : '#202124') + '">' + (st.mode === 'h' ? val : pad(val)) + '</text>';
+  }
+  s += '<circle r="5" fill="#1a73e8"/>';
+  sv.innerHTML = s;
+  rd.innerHTML = '<span id="rh" class="' + (st.mode === 'h' ? 'on' : '') + '">' + pad(st.h) + '</span>:' +
+    '<span id="rm" class="' + (st.mode === 'm' ? 'on' : '') + '">' + pad(st.m) + '</span>';
+  document.getElementById('am').className = st.pm ? '' : 'on';
+  document.getElementById('pm').className = st.pm ? 'on' : '';
+}
+sv.addEventListener('click', function (e) {
+  var r = sv.getBoundingClientRect();
+  var ang = (Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI + 360) % 360;
+  if (st.mode === 'h') { st.h = Math.round(ang / 30) || 12; st.mode = 'm'; }
+  else { st.m = Math.round(ang / 6) % 60; }
+  draw();
+});
+rd.addEventListener('click', function (e) {
+  if (e.target.id === 'rh') st.mode = 'h';
+  if (e.target.id === 'rm') st.mode = 'm';
+  draw();
+});
+document.getElementById('am').onclick = function () { st.pm = false; draw(); };
+document.getElementById('pm').onclick = function () { st.pm = true; draw(); };
+document.getElementById('cn').onclick = function () { dlg.hidden = true; };
+dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.hidden = true; });
+document.getElementById('ok').onclick = function () {
+  cur.value = pad(st.h % 12 + (st.pm ? 12 : 0)) + ':' + pad(st.m);
+  dlg.hidden = true;
+  cur.dispatchEvent(new Event('change', { bubbles: true }));
+};
+f.addEventListener('focusin', function (e) {
+  var t = e.target;
+  if (!t.classList || !t.classList.contains('tp')) return;
+  t.blur();
+  cur = t;
+  var m = /^(\d\d):(\d\d)$/.exec(t.value);
+  st = m ? { h: (+m[1]) % 12 || 12, m: +m[2], pm: +m[1] >= 12, mode: 'h' } : { h: 12, m: 0, pm: false, mode: 'h' };
+  dlg.hidden = false;
+  draw();
+});
+</script>
+</body>
+</html>
